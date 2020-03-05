@@ -16,14 +16,17 @@
 
 import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
-import { ReplaySubject, Observable } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, ReplaySubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 /**
  * CODE COPIED FROM: 'https://github.com/angular/angular/blob/master/aio/src/app/shared/location.service.ts' and modified
  */
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class BaLocationService {
   // TODO: check if we have a document
   // tslint:disable-next-line ban
@@ -47,7 +50,11 @@ export class BaLocationService {
     ),
   );
 
-  constructor(private _location: Location) {
+  constructor(
+    private _location: Location,
+    private _activatedRoute: ActivatedRoute,
+    private _router: Router,
+  ) {
     this._urlSubject.next(_location.path(true));
     this._location.subscribe(state => {
       this._urlSubject.next(state.url || '');
@@ -56,6 +63,9 @@ export class BaLocationService {
 
   /** Navigate to given URL. */
   go(url: string | null | undefined): void {
+    console.log('go function, activated route:');
+    console.log(this._activatedRoute);
+
     if (!url) {
       return;
     }
@@ -66,6 +76,8 @@ export class BaLocationService {
     } else {
       this._location.go(urlWithoutSlashes);
       this._urlSubject.next(urlWithoutSlashes);
+
+      this._router.navigate([urlWithoutSlashes]);
     }
   }
 

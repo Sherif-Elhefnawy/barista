@@ -17,9 +17,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AsyncSubject, Observable, of } from 'rxjs';
-import { switchMap, catchError, map } from 'rxjs/operators';
-
-import { BaLocationService } from './location.service';
+import { catchError, map, switchMap, pluck, tap } from 'rxjs/operators';
 
 import { environment } from '../environments/environment';
 import {
@@ -27,6 +25,13 @@ import {
   BaPageLayoutType,
   BaErrorPageContent,
 } from '@dynatrace/shared/barista-definitions';
+import { BaLocationService } from './location.service';
+import {
+  ActivatedRoute,
+  ActivatedRouteSnapshot,
+  RouterState,
+  Router,
+} from '@angular/router';
 
 const CONTENT_PATH_PREFIX = 'data/';
 
@@ -44,48 +49,60 @@ const ERRORPAGE: BaErrorPageContent = {
     "Sorry, an error has occured. Don't worry, we're working to fix the problem!",
 };
 
-/**
- * CODE COPIED FROM: 'https://github.com/angular/angular/blob/master/aio/src/app/documents/document.service.ts' and modified
- */
-
 @Injectable()
 export class BaPageService {
   /**
+   * @internal
    * Caches pages once they have been loaded.
    */
-  private _cache = new Map<string, Observable<BaSinglePageContent>>();
+  _cache = new Map<string, BaSinglePageContent>();
 
   /**
    * The current page that should be displayed.
    */
   currentPage: Observable<BaSinglePageContent>;
 
-  constructor(private http: HttpClient, location: BaLocationService) {
-    // Whenever the URL changes we try to get the appropriate doc
-    this.currentPage = location.currentPath$.pipe(
-      switchMap(path => this._getPage(path)),
-    );
+  constructor(private _http: HttpClient, private _router: Router) {
+    // // Whenever the URL changes we try to get the appropriate doc
+    // this.currentPage = location.currentPath$.pipe(
+    //   switchMap(path => this._getPage(path)),
+    // );
+    // // Populate the cache with the search page so that it is always available.
+    // this._cache.set(
+    //   'search',
+    //   of({
+    //     layout: BaPageLayoutType.Search,
+    //     title: 'Search results',
+    //   } as BaSinglePageContent),
+    // );
+  }
 
-    // Populate the cache with the search page so that it is always available.
-    this._cache.set(
-      'search',
-      of({
-        layout: BaPageLayoutType.Search,
-        title: 'Search results',
-      } as BaSinglePageContent),
-    );
+  _getCurrentPage(): BaSinglePageContent | null {
+    // TODO: rename index page to home
+    const url = this._router.url.substr(1);
+    const id = url !== 'home' ? url : 'index';
+    const page = this._cache.get(id);
+
+    if (!page) {
+      this._router.navigate(['not-found']);
+      return null;
+    }
+    return page;
   }
 
   /**
+   * @internal
    * Gets page from cache.
    * @param url - path to page
    */
-  private _getPage(url: string): Observable<BaSinglePageContent> {
-    const id = url || 'index';
+  _getPage(url: string): Observable<BaSinglePageContent> {
+    console.log('getting page:', url);
+
+    const id = url !== 'home' ? url : 'index';
     if (!this._cache.has(id)) {
-      this._cache.set(id, this._fetchPage(id));
+      return this._fetchPage(id);
     }
-    return this._cache.get(id)!;
+    return of(this._cache.get(id)!);
   }
 
   /**
@@ -94,24 +111,14 @@ export class BaPageService {
    */
   private _fetchPage(id: string): Observable<BaSinglePageContent> {
     const requestPath = `${environment.dataHost}${CONTENT_PATH_PREFIX}${id}.json`;
-    const subject = new AsyncSubject<BaSinglePageContent>();
 
-    this.http
+    return this._http
       .get<BaSinglePageContent>(requestPath, { responseType: 'json' })
       .pipe(
-        map(data => {
-          if (!data || typeof data !== 'object') {
-            return ERRORPAGE;
-          } else {
-            return data;
-          }
-        }),
-        catchError((error: HttpErrorResponse) => {
-          return of(error.status === 404 ? ERRORPAGE_404 : ERRORPAGE);
-        }),
-      )
-      .subscribe(subject);
-
-    return subject.asObservable();
+        catchError((error: HttpErrorResponse) =>
+          of(error.status === 404 ? ERRORPAGE_404 : ERRORPAGE),
+        ),
+        tap(data => this._cache.set(id, data)),
+      );
   }
 }

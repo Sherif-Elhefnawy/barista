@@ -22,7 +22,7 @@ import {
   OnDestroy,
   NgZone,
 } from '@angular/core';
-import { BaTocService, BaTocItem } from '../../shared/toc.service';
+import { BaTocService, BaTocItem } from '../../shared/services/toc.service';
 import { Subscription } from 'rxjs';
 
 @Component({

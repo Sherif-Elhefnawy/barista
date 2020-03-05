@@ -18,7 +18,7 @@ import { Component } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { BaLocationService } from '../../shared/location.service';
+import { BaLocationService } from '../../shared/services/location.service';
 import { map, distinctUntilChanged, shareReplay } from 'rxjs/operators';
 
 const CONTENT_PATH_PREFIX = 'data/';

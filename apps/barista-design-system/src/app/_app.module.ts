@@ -56,32 +56,18 @@ import { DtTagModule } from '@dynatrace/barista-components/tag';
 import { DtFormFieldModule } from '@dynatrace/barista-components/form-field';
 import { DtInputModule } from '@dynatrace/barista-components/input';
 import { HttpClientModule } from '@angular/common/http';
-import { NgModule, Component } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { environment } from './environments/environment';
 import { BaComponentsModule } from './components';
 import { DtBreadcrumbsModule } from '@dynatrace/barista-components/breadcrumbs';
 import { DtThemingModule } from '@dynatrace/barista-components/theming';
 import { DtExamplesModule } from '@dynatrace/examples';
 import { DtToastModule } from '@dynatrace/barista-components/toast';
-import { RouterModule } from '@angular/router';
 
-/**
- * Function expressions are not supported in decorators,
- * so this dummy error handler has to be an exported function.
- */
-export function BaDummyErrorHandler(): void {}
-
-/**
- * Workaround to make the router module work
- * but not interfere with the location service.
- */
-@Component({
-  template: '',
-})
-export class NoopRoute {}
 import { BaSearchPage } from './pages/search-page/search-page';
 import { BaSearchService } from './shared/search.service';
 import { DtHighlightModule } from '@dynatrace/barista-components/highlight';
+import { BaRoutingModule } from './app.routing.module';
 
 const PAGES = [
   BaSinglePage,
@@ -112,14 +98,7 @@ const PAGES = [
     DtThemingModule,
     DtExamplesModule,
     DtToastModule,
-    /**
-     * The routermodule is added for the secondary-nav component examples
-     * to work. This can be removed as soon as the secondary-nav-section
-     * does not depend on it anymore. (see issue #465 on github)
-     */
-    RouterModule.forRoot([{ path: '**', component: NoopRoute }], {
-      errorHandler: BaDummyErrorHandler,
-    }),
+    BaRoutingModule,
   ],
   exports: [],
   declarations: [
@@ -137,7 +116,6 @@ const PAGES = [
     BaToc,
     BaSidenav,
     BaScrollToTop,
-    NoopRoute,
     ...PAGES,
   ],
   providers: [
